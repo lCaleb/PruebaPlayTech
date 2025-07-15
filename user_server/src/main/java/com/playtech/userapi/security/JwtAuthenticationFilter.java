@@ -1,5 +1,6 @@
 package com.playtech.userapi.security;
 
+import com.playtech.userapi.shared.Constants;
 import com.playtech.userapi.model.User;
 import com.playtech.userapi.repository.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -44,7 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtProvider.validateToken(token)) {
                 User user = userRepository.findByEmail(email)
-                        .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                        .orElseThrow(() -> new RuntimeException(Constants.USER_NOT_FOUND));
 
                 UserDetailsImpl userDetails = new UserDetailsImpl(user);
 

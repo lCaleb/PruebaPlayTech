@@ -1,6 +1,6 @@
 package com.playtech.userapi.service;
 
-
+import com.playtech.userapi.shared.Constants;
 import com.playtech.userapi.dto.AuthResponseDTO;
 import com.playtech.userapi.dto.UserDTO;
 import com.playtech.userapi.model.User;
@@ -28,7 +28,7 @@ public class AuthService {
             new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
     
         User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            .orElseThrow(() -> new RuntimeException(Constants.USER_NOT_FOUND));
     
         String accessToken = jwtProvider.generateToken(auth);
         user.setToken(accessToken);

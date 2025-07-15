@@ -1,10 +1,12 @@
 package com.playtech.userapi.service;
 
-
 import com.playtech.userapi.dto.UserDTO;
+import com.playtech.userapi.exception.ApiException;
 import com.playtech.userapi.model.User;
 import com.playtech.userapi.repository.UserRepository;
+import com.playtech.userapi.shared.Constants;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,14 +21,12 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     public UserDTO createUser(UserDTO request) {
-        // Validación: Email ya está registrado
         if (repository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Ya existe un usuario con ese email.");
+            throw new ApiException(Constants.EMAIL_IN_USE, HttpStatus.BAD_REQUEST);
         }
 
-        // Validación: Fecha de nacimiento no puede ser futura
         if (request.getDateBirth() != null && request.getDateBirth().isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("La fecha de nacimiento no puede ser futura.");
+            throw new ApiException(Constants.FUTURE_BIRTH_DATE, HttpStatus.BAD_REQUEST);
         }
 
         User user = mapToEntity(request);
@@ -42,30 +42,28 @@ public class UserService {
 
     public UserDTO getUserById(Long id) {
         User user = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+                .orElseThrow(() -> new ApiException(Constants.USER_NOT_FOUND_ID, HttpStatus.NOT_FOUND));
         return mapToResponse(user);
     }
 
     public UserDTO updateUser(Long id, UserDTO request) {
         User user = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+                .orElseThrow(() -> new ApiException(Constants.USER_NOT_FOUND_ID, HttpStatus.NOT_FOUND));
 
-        // Validación: Email ya está en uso por otro usuario
         if (!user.getEmail().equals(request.getEmail())) {
             boolean emailExists = repository.findByEmail(request.getEmail())
                     .filter(existing -> !existing.getId().equals(id))
                     .isPresent();
 
             if (emailExists) {
-                throw new IllegalArgumentException("El correo ya está en uso por otro usuario.");
+                throw new ApiException(Constants.EMAIL_ALREADY_USED_BY_ANOTHER, HttpStatus.BAD_REQUEST);
             }
 
             user.setEmail(request.getEmail());
         }
 
-        // Validación: Fecha de nacimiento
         if (request.getDateBirth() != null && request.getDateBirth().isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("La fecha de nacimiento no puede ser futura.");
+            throw new ApiException(Constants.FUTURE_BIRTH_DATE, HttpStatus.BAD_REQUEST);
         }
 
         user.setFirstName(request.getFirstName());
@@ -86,7 +84,7 @@ public class UserService {
 
     public void deleteUser(Long id) {
         if (!repository.existsById(id)) {
-            throw new RuntimeException("No se puede eliminar: usuario no encontrado con ID: " + id);
+            throw new ApiException(Constants.USER_CANNOT_BE_DELETED + id, HttpStatus.NOT_FOUND);
         }
         repository.deleteById(id);
     }
@@ -103,7 +101,6 @@ public class UserService {
                 .activo(true)
                 .build();
     }
-    
 
     public UserDTO mapToResponse(User user) {
         return UserDTO.builder()
@@ -115,11 +112,10 @@ public class UserService {
                 .token(user.getToken())
                 .mobilePhone(user.getMobilePhone())
                 .email(user.getEmail())
-                .password(user.getPassword()) // <-- sí, incluirla hasheada como pediste
+                .password(user.getPassword())
                 .activo(user.getActivo())
                 .creadoEn(user.getCreadoEn())
                 .actualizadoEn(user.getActualizadoEn())
                 .build();
     }
-
 }
