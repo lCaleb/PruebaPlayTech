@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/user_api
-    username: usuario_prueba
-    password: admin123
+    url: jdbc:postgresql://host.docker.internal:5432/user_api
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
 
   jpa:
